@@ -1,7 +1,6 @@
 import json
 from ast import literal_eval as le
-
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -132,8 +131,11 @@ def req():
         form.populate_obj(request)
         db.session.add(request)
         db.session.commit()
-        print(db.session.query(Request.client_name.first()))
-        return render_template('request_done.html', goal=request.goal, time=request.time, name=request.client_name,
+        goalform = {"travel": "Для путешествий", "learn": "Для школы", "work": "Для работы", "move": "Для переезда"}
+        timeform = {"1-2": "1-2 часа в неделю", "3-5": "3-5 часов в неделю", "5-7": "5-7 часов в неделю",
+                    "7-10": "7-10 часов в неделю"}
+        return render_template('request_done.html', goal=goalform[request.goal], time=timeform[request.time],
+                               name=request.client_name,
                                phone=request.client_phone)
     return render_template('request.html', form=form)
 
@@ -151,33 +153,19 @@ def booking(id, weekday, time):
     if form.validate_on_submit():
         booking = Booking()
         form.populate_obj(booking)
+        booking.weekday=weekday
+        booking.time=time
         db.session.add(booking)
         db.session.commit()
-        return render_template('booking_done.html', weekday=booking.weekday, time=booking.time,
+        week = {"mon": "Понедельник", "tue": "Вторник", "wed": "Среда", "thu": "Четверг", "fri": "Пятница",
+                "sat": "Суббота", "sun": "Воскресение"}
+        return render_template('booking_done.html', id=booking.teacher_id, weekday=week[booking.weekday], time=booking.time,
                                name=booking.client_name, phone=booking.client_phone, teacher=booking.teacher)
     else:
-        teacher = db.session.query(Teacher).get(int(id))
-        # daystime = {}
-        # freetime = le(teacher.free)
-        # for day1, var in freetime.items():
-        #     for time1, check in var.items():
-        #         if check == True:
-        #             daystime[day1] = time1
-        # if weekday in daystime.keys():
-        #     time = daystime.get(weekday)
+
         return render_template('booking.html', teacher=teacher, time=time, weekday=weekday, form=form)
 
 
-# @app.route('/booking_done/', methods=['POST'])
-# def booking_done():
-#     name = request.form['clientName']
-#     phone = request.form['clientPhone']
-#     time = request.form['clientTime']
-#     day = request.form['clientWeekday']
-#     to_json = [name, phone]
-#     with open('booking.json', 'w', encoding='utf-8') as f:
-#         json.dump(to_json, f, ensure_ascii=False)
-#     return render_template('booking_done.html', name=name, phone=phone, day=day, time=time)
 
 
 if __name__ == '__main__':
